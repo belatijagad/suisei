@@ -1,0 +1,6 @@
+uvicorn
+rdflib
+SPARQLWrapper
+pydantic
+fastapi`
+pydantic-settings
