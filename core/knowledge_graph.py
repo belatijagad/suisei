@@ -120,6 +120,58 @@ class KnowledgeGraph:
     print(f'Query: {query}')
     return await self._execute_query(query)
 
+  async def search_by_category(self, category: str) -> List[Dict]:
+    print(f"Searching for category: {category}")
+    query = self.prefixes + """
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX v: <http://example.com/vocab#>
+
+    SELECT DISTINCT ?title ?description ?cuisine ?url ?totalIngredients
+        ?steps ?totalSteps ?loves ?category ?author ?diet ?course ?rating ?recordHealth
+        ?cookTime ?prepTime ?ingredients ?tags
+    WHERE {
+        ?makanan rdfs:label ?title ;
+                v:hasRecipe ?recipe .
+        ?recipe v:hasUrl ?url ;
+                v:hasSteps ?steps ;
+                v:hasCategory ?category .
+
+        FILTER(CONTAINS(LCASE(?category), LCASE("%s")))
+
+        {
+            SELECT ?recipe (GROUP_CONCAT(?ingredient; SEPARATOR=";") AS ?ingredients)
+            WHERE {
+                ?recipe v:hasIngredients ?ingredient
+            }
+            GROUP BY ?recipe
+        }
+
+        {
+            SELECT ?recipe (GROUP_CONCAT(?tag; SEPARATOR=";") AS ?tags)
+            WHERE {
+                ?recipe v:hasTags ?tag
+            }
+            GROUP BY ?recipe
+        }
+        
+        OPTIONAL {?recipe v:hasDescription ?description ; }
+        OPTIONAL {?recipe v:hasCuisine ?cuisine ; }
+        OPTIONAL {?recipe v:hasTotalIngredients ?totalIngredients ; }
+        OPTIONAL {?recipe v:hasTotalSteps ?totalSteps ; }
+        OPTIONAL {?recipe v:hasLoves ?loves ; }
+        OPTIONAL {?recipe v:hasAuthor ?author ; }
+        OPTIONAL {?recipe v:hasDiet ?diet ; }
+        OPTIONAL {?recipe v:hasCourse ?course ; }
+        OPTIONAL {?recipe v:hasRating ?rating ; }
+        OPTIONAL {?recipe v:hasRecordHealth ?recordHealth ; }
+        OPTIONAL {?recipe v:hasCookTime ?cookTime ; }
+        OPTIONAL {?recipe v:hasPrepTime ?prepTime ; }
+    }
+    LIMIT 10
+    """ % category
+    print(f'Query: {query}')
+    return await self._execute_query(query)
+
   async def _execute_query(self, query: str) -> List[Dict]:
     try:
       self.endpoint.setQuery(query)
