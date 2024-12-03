@@ -19,36 +19,104 @@ class KnowledgeGraph:
   async def search_by_name(self, name: str) -> List[Dict]:
     print(f"Searching for: {name}")
     query = self.prefixes + """
-    SELECT DISTINCT ?title ?description ?cuisine ?url (GROUP_CONCAT(?ingredient; SEPARATOR=";") AS ?ingredients) ?totalIngredients
-    ?steps ?totalSteps ?loves ?category (GROUP_CONCAT(?tag; SEPARATOR=";") AS ?tags) ?author ?diet ?course ?rating ?recordHealth
-    ?cookTime ?prepTime
+    SELECT DISTINCT ?title ?description ?cuisine ?url ?totalIngredients
+    ?steps ?totalSteps ?loves ?category ?author ?diet ?course ?rating ?recordHealth
+    ?cookTime ?prepTime ?ingredients ?tags
     WHERE {
-      ?makanan rdfs:label ?title ;
+        ?makanan rdfs:label ?title ;
         v:hasRecipe ?recipe .
-    OPTIONAL {?recipe v:hasDescription ?description ; }
-    OPTIONAL {?recipe v:hasCuisine ?cuisine ; }
-	  OPTIONAL {?recipe v:hasUrl ?url ; }
-    OPTIONAL {?recipe v:hasIngredients ?ingredient ; }
-    OPTIONAL {?recipe v:hasTotalIngredients ?totalIngredients ; }
-    OPTIONAL {?recipe v:hasSteps ?steps ; }
-    OPTIONAL {?recipe v:hasTotalSteps ?totalSteps ; }
-    OPTIONAL {?recipe v:hasLoves ?loves ; }
-    OPTIONAL {?recipe v:hasCategory ?category ; }
-    OPTIONAL {?recipe v:hasTags ?tag ; }
-    OPTIONAL {?recipe v:hasAuthor ?author ; }
-    OPTIONAL {?recipe v:hasDiet ?diet ; }
-    OPTIONAL {?recipe v:hasCourse ?course ; }
-    OPTIONAL {?recipe v:hasRating ?rating ; }
-    OPTIONAL {?recipe v:hasRecordHealth ?recordHealth ; }
-    OPTIONAL {?recipe v:hasCookTime ?cookTime ; }
-    OPTIONAL {?recipe v:hasPrepTime ?prepTime ; }
+          {
+                SELECT (GROUP_CONCAT(?ingredient; SEPARATOR=";") AS ?ingredients) 
+                WHERE {
+                  ?recipe v:hasIngredients ?ingredient
+              }
+              GROUP BY ?recipe
+          }
+        
+          {
+                SELECT (GROUP_CONCAT(?tag; SEPARATOR=";") AS ?tags) 
+                WHERE {
+                  ?recipe v:hasTags ?tag
+              }
+              GROUP BY ?recipe
+          }
+        
+      OPTIONAL {?recipe v:hasDescription ?description ; }
+        OPTIONAL {?recipe v:hasCuisine ?cuisine ; }
+        OPTIONAL {?recipe v:hasUrl ?url ; }
+        OPTIONAL {?recipe v:hasIngredients ?ingredient ; }
+        OPTIONAL {?recipe v:hasTotalIngredients ?totalIngredients ; }
+        OPTIONAL {?recipe v:hasSteps ?steps ; }
+        OPTIONAL {?recipe v:hasTotalSteps ?totalSteps ; }
+        OPTIONAL {?recipe v:hasLoves ?loves ; }
+        OPTIONAL {?recipe v:hasCategory ?category ; }
+        OPTIONAL {?recipe v:hasTags ?tag ; }
+        OPTIONAL {?recipe v:hasAuthor ?author ; }
+        OPTIONAL {?recipe v:hasDiet ?diet ; }
+        OPTIONAL {?recipe v:hasCourse ?course ; }
+        OPTIONAL {?recipe v:hasRating ?rating ; }
+        OPTIONAL {?recipe v:hasRecordHealth ?recordHealth ; }
+        OPTIONAL {?recipe v:hasCookTime ?cookTime ; }
+        OPTIONAL {?recipe v:hasPrepTime ?prepTime ; }
 
-      FILTER(CONTAINS(LCASE(?title), LCASE("%s")))
+        FILTER(CONTAINS(LCASE(?title), LCASE("%s")))
     }
-    GROUP BY ?title ?description ?cuisine ?url ?totalIngredients ?steps ?totalSteps ?loves ?category ?author
-    ?diet ?course ?rating ?recordHealth ?cookTime ?prepTime
+    LIMIT 10
 
     """ % name
+    print(f'Query: {query}')
+    return await self._execute_query(query)
+    
+  async def search_by_ingredient(self, ingredient: str) -> List[Dict]:
+    print(f"Searching for ingredient: {ingredient}")
+    query = self.prefixes + """
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX v: <http://example.com/vocab#>
+
+    SELECT DISTINCT ?title ?description ?cuisine ?url ?totalIngredients
+        ?steps ?totalSteps ?loves ?category ?author ?diet ?course ?rating ?recordHealth
+        ?cookTime ?prepTime ?ingredients ?tags
+    WHERE {
+        ?makanan rdfs:label ?title ;
+                v:hasRecipe ?recipe .
+        ?recipe v:hasUrl ?url ;
+                v:hasSteps ?steps ;
+                v:hasIngredients ?searchIngredient .
+        
+        FILTER(CONTAINS(LCASE(?searchIngredient), LCASE("%s")))
+
+        {
+            SELECT ?recipe (GROUP_CONCAT(?ingredient; SEPARATOR=";") AS ?ingredients)
+            WHERE {
+                ?recipe v:hasIngredients ?ingredient
+            }
+            GROUP BY ?recipe
+        }
+
+        {
+            SELECT ?recipe (GROUP_CONCAT(?tag; SEPARATOR=";") AS ?tags)
+            WHERE {
+                ?recipe v:hasTags ?tag
+            }
+            GROUP BY ?recipe
+        }
+        
+        OPTIONAL {?recipe v:hasDescription ?description ; }
+        OPTIONAL {?recipe v:hasCuisine ?cuisine ; }
+        OPTIONAL {?recipe v:hasTotalIngredients ?totalIngredients ; }
+        OPTIONAL {?recipe v:hasTotalSteps ?totalSteps ; }
+        OPTIONAL {?recipe v:hasLoves ?loves ; }
+        OPTIONAL {?recipe v:hasCategory ?category ; }
+        OPTIONAL {?recipe v:hasAuthor ?author ; }
+        OPTIONAL {?recipe v:hasDiet ?diet ; }
+        OPTIONAL {?recipe v:hasCourse ?course ; }
+        OPTIONAL {?recipe v:hasRating ?rating ; }
+        OPTIONAL {?recipe v:hasRecordHealth ?recordHealth ; }
+        OPTIONAL {?recipe v:hasCookTime ?cookTime ; }
+        OPTIONAL {?recipe v:hasPrepTime ?prepTime ; }
+    }
+    LIMIT 10
+    """ % ingredient
     print(f'Query: {query}')
     return await self._execute_query(query)
 
