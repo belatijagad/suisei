@@ -36,8 +36,6 @@ class KnowledgeGraph:
       ?makanan rdfs:label ?title ;
         v:hasRecipe ?recipe .
       ?recipe v:hasUrl ?url ;
-        v:hasAuthor ?author ;
-        v:hasCuisine ?cuisine ;
         v:hasCategory ?category ;
         v:hasSteps ?steps ;
         v:hasTotalSteps ?totalSteps ;
@@ -51,14 +49,15 @@ class KnowledgeGraph:
         WHERE { ?recipe v:hasIngredients ?ingredient } GROUP BY ?recipe
       }
     
-      {
+      OPTIONAL{
         SELECT ?recipe (GROUP_CONCAT(?tag; SEPARATOR=";") AS ?tags) 
         WHERE { ?recipe v:hasTags ?tag } GROUP BY ?recipe
       }
-      
+
+      OPTIONAL {?recipe v:hasAuthor ?author ; }
+      OPTIONAL {?recipe v:hasCuisine ?cuisine ; }
       OPTIONAL {?recipe v:hasDescription ?description ; }
       OPTIONAL {?recipe v:hasLoves ?loves ; }
-      OPTIONAL {?recipe v:hasTags ?tag ; }
       OPTIONAL {?recipe v:hasDiet ?diet ; }
       OPTIONAL {?recipe v:hasCourse ?course ; }
       OPTIONAL {?recipe v:hasRating ?rating ; }
