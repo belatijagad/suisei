@@ -13,7 +13,6 @@ async def search_recipes(
   category: Optional[str] = Query(None, description='Srach recipes by category'),
 ):
   try:
-    print(ingredients)
     ingredient_list = None if not ingredients else [i.strip() for i in ingredients.split()]
     results = await recipe_service.search_recipes(title, category, ingredient_list)
     return results

@@ -18,7 +18,6 @@ class KnowledgeGraph:
 
   async def search(self, title: Optional[str], category: Optional[str], ingredients: Optional[List[str]], limit: int=10) -> List[Dict]:
     conditions = []
-    print(ingredients)
     if title: conditions.append(f'CONTAINS(LCASE(?title), LCASE("{title}"))')
     if category: conditions.append(f'CONTAINS(LCASE(?category), LCASE("{category}"))')
     if ingredients:
@@ -28,7 +27,6 @@ class KnowledgeGraph:
       ])
       conditions.append(f'({ingredient_conditions})')
     final_conditions = ' && '.join(conditions) if conditions else 'true'
-    print(final_conditions)
     
     query = self.prefixes + """
     SELECT DISTINCT ?title ?description ?cuisine ?url ?totalIngredients
@@ -77,7 +75,6 @@ class KnowledgeGraph:
     try:
       self.endpoint.setQuery(query)
       results = self.endpoint.queryAndConvert()
-      print(results)
       return self._format_results(results)
     except Exception as e:
       print(f"Query execution error: {str(e)}")
