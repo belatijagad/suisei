@@ -37,5 +37,6 @@ class RecipeResponse(BaseModel):
   recordHealth: Optional[str] = None
   cookTime: Optional[str] = None
   prepTime: Optional[str] = None
+  wikicode: Optional[str] = None
   class Config:
     from_attributes = True

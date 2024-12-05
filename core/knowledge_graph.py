@@ -1,6 +1,7 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
 from typing import List, Dict, Optional
 from config import settings
+import requests
 
 class KnowledgeGraph:
   def __init__(self):
@@ -31,7 +32,7 @@ class KnowledgeGraph:
     query = self.prefixes + """
     SELECT DISTINCT ?title ?description ?cuisine ?url ?totalIngredients
     ?steps ?totalSteps ?loves ?category ?author ?diet ?course ?rating ?recordHealth
-    ?cookTime ?prepTime ?ingredients ?tags
+    ?cookTime ?prepTime ?ingredients ?tags ?wikicode
     WHERE {
       ?makanan rdfs:label ?title ;
         v:hasRecipe ?recipe .
@@ -64,6 +65,10 @@ class KnowledgeGraph:
       OPTIONAL {?recipe v:hasRecordHealth ?recordHealth ; }
       OPTIONAL {?recipe v:hasCookTime ?cookTime ; }
       OPTIONAL {?recipe v:hasPrepTime ?prepTime ; }
+      OPTIONAL {
+          ?makanan v:hasWikidata ?wikinode .
+          ?wikinode rdfs:label ?wikicode .
+      }
     }
     LIMIT %s
     """ % (final_conditions, limit)
@@ -96,3 +101,4 @@ class KnowledgeGraph:
           formatted.append(item)
               
       return formatted
+  import requests
