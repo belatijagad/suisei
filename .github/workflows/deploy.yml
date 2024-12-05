@@ -59,6 +59,21 @@ jobs:
           # Copy files
           scp -r ./* ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }}:~/fastapi-app/
           
+          # Create .env file from secrets
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
+            cat > ~/fastapi-app/.env << EOL
+            API_V1_STR=${{ secrets.API_V1_STR }}
+            PROJECT_NAME=${{ secrets.PROJECT_NAME }}
+            PROJECT_VERSION=${{ secrets.PROJECT_VERSION }}
+            DB_ENDPOINT=${{ secrets.DB_ENDPOINT }}
+            WIKIDATA_ENDPOINT=${{ secrets.WIKIDATA_ENDPOINT }}
+            DEBUG=${{ secrets.DEBUG }}
+            EOL
+
+            # Set proper permissions
+            chmod 600 ~/fastapi-app/.env
+          '
+
           # Install dependencies and restart service
           ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
             cd ~/fastapi-app &&
