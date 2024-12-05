@@ -46,9 +46,7 @@ class RecipeService:
         
         for recipe in recipes:
             try:
-                print('run')
                 wikidata_code = recipe.get('wikicode')
-                print(wikidata_code)
                 if wikidata_code:
                     wikidata_info = self.wikidata.get_info_from_wikidata(wikidata_code)
                     if wikidata_info:
