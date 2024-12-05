@@ -1,61 +1,51 @@
-# core/wikidata.py
 from SPARQLWrapper import SPARQLWrapper, JSON
 from typing import Dict, Optional
 from config import settings
-import requests
+from functools import lru_cache
 
 class WikidataClient:
+    PROPERTIES_MAP = {
+        'http://www.wikidata.org/prop/direct/P18': 'image',
+        'http://www.wikidata.org/prop/direct/P495': 'country',
+    }
+
     def __init__(self):
         self.endpoint = SPARQLWrapper(settings.WIKIDATA_ENDPOINT)
         self.endpoint.setReturnFormat(JSON)
-        self.prefixes = """
-        PREFIX wd: <http://www.wikidata.org/entity/>
-        PREFIX wdt: <http://www.wikidata.org/prop/direct/>
-        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX schema: <http://schema.org/>
-        """
+        # Removed the invalid addCustomUserAgent line
+        self.endpoint.addCustomParameter('User-Agent', 'TasteGraph/1.0')  # This is the correct way to add a user agent
 
-    def get_info_from_wikidata(self, wikidata_code):
-
-        # example: get_info_from_wikidata("Q16836245")
-
-        # Define the REST API endpoint for the Wikidata item
-        info = dict()
-        # print("wiki:", wikidata_code)
-
-
-        # Define the SPARQL endpoint and query
-        sparql_url = "https://query.wikidata.org/sparql"
-        query = f"""
+    def _build_query(self, wikidata_code: str) -> str:
+        return f"""
         SELECT ?property ?propertyLabel ?value ?valueLabel
         WHERE {{
-        wd:{wikidata_code} ?property ?value.
-        SERVICE wikibase:label {{ bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }}
+            wd:{wikidata_code} ?property ?value.
+            SERVICE wikibase:label {{ 
+                bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". 
+            }}
         }}
         """
 
-        key_to_get = {
-            'http://www.wikidata.org/prop/direct/P18': 'image',
-            'http://www.wikidata.org/prop/direct/P495': 'country',
-        }
+    @lru_cache(maxsize=100)
+    def get_info_from_wikidata(self, wikidata_code: str) -> Dict:
+        try:
+            self.endpoint.setQuery(self._build_query(wikidata_code))
+            data = self.endpoint.query().convert()
+            return self._parse_response(data)
+            
+        except Exception as e:
+            print(f"Error fetching Wikidata info: {e}")
+            return {}
 
-        # Send the request to the Wikidata SPARQL endpoint
-        response = requests.get(sparql_url, params={'query': query, 'format': 'json'})
+    def _parse_response(self, data: Dict) -> Dict:
+        info = {}
+        
+        if not data.get("results", {}).get("bindings"):
+            return info
 
-        # Parse the response
-        data = response.json()
-        # print(data)
+        for result in data["results"]["bindings"]:
+            property_label = result["propertyLabel"]["value"]
+            if property_label in self.PROPERTIES_MAP:
+                info[self.PROPERTIES_MAP[property_label]] = result.get("valueLabel", {}).get("value")
 
-        # Check and print the results
-        if "results" in data and "bindings" in data["results"]:
-            for result in data["results"]["bindings"]:
-                property_label = result["propertyLabel"]["value"]
-                value_label = result.get("valueLabel", {}).get("value", "No label")
-
-                # print(f"{property_label}: {value_label}")
-                if(property_label in key_to_get.keys()):
-                    info[key_to_get[property_label]] = value_label
-        else:
-            print("No results found.")
-
-        return info
+        return info 
