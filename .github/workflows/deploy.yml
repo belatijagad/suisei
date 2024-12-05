@@ -35,18 +35,25 @@ jobs:
       - name: Deploy to VM
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          # Install python3-venv if not already installed
-          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} 'sudo apt-get update && sudo apt-get install -y python3-venv'
+          # Remove old venv if exists
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
+            rm -rf ~/fastapi-app/venv
+          '
+
+          # Install required packages (optimized)
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
+           sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq && 
+           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv python3-pip
+          '
           
           # Create directory first
           ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} 'mkdir -p ~/fastapi-app'
           
-          # Create and activate virtual environment if it doesn't exist
+          # Create new virtual environment and install pip
           ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
             cd ~/fastapi-app &&
-            if [ ! -d "venv" ]; then
-              python3 -m venv venv
-            fi
+            python3 -m venv venv &&
+            venv/bin/python -m pip install --upgrade pip
           '
           
           # Copy files
@@ -55,7 +62,6 @@ jobs:
           # Install dependencies and restart service
           ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
             cd ~/fastapi-app &&
-            source venv/bin/activate &&
-            pip install -r requirements.txt &&
+            venv/bin/pip install -r requirements.txt &&
             sudo systemctl restart fastapi
           '
