@@ -32,27 +32,27 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
-          - name: Deploy to VM
-          if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-          run: |
-            # Create directory first
-            ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} 'mkdir -p ~/fastapi-app'
-            
-            # Create and activate virtual environment if it doesn't exist
-            ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
-              cd ~/fastapi-app &&
-              if [ ! -d "venv" ]; then
-                python3 -m venv venv
-              fi
-            '
-            
-            # Copy files
-            scp -r ./* ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }}:~/fastapi-app/
-            
-            # Install dependencies and restart service
-            ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
-              cd ~/fastapi-app &&
-              source venv/bin/activate &&
-              pip install -r requirements.txt &&
-              sudo systemctl restart fastapi
-            '
+      - name: Deploy to VM
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          # Create directory first
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} 'mkdir -p ~/fastapi-app'
+          
+          # Create and activate virtual environment if it doesn't exist
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
+            cd ~/fastapi-app &&
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
+          '
+          
+          # Copy files
+          scp -r ./* ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }}:~/fastapi-app/
+          
+          # Install dependencies and restart service
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} '
+            cd ~/fastapi-app &&
+            source venv/bin/activate &&
+            pip install -r requirements.txt &&
+            sudo systemctl restart fastapi
+          '
