@@ -35,6 +35,9 @@ jobs:
       - name: Deploy to VM
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
+          # Install python3-venv if not already installed
+          ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} 'sudo apt-get update && sudo apt-get install -y python3-venv'
+          
           # Create directory first
           ssh ${{ secrets.VM_USERNAME }}@${{ secrets.VM_HOST }} 'mkdir -p ~/fastapi-app'
           
